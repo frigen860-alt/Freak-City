@@ -18,11 +18,11 @@ if CLIENT then
 		CreateChat()
 	end)
 
+	local adminShow = ConVarExists("zb_admin_show_voicechat") and GetConVar("zb_admin_show_voicechat")
 	hook.Add("PlayerStartVoice","RemoveVoicePanles",function(ply)
 		if !IsValid(ply) then return end
 		local lply = LocalPlayer()
 		if IsValid(lply) and lply:IsAdmin() then
-			local adminShow = ConVarExists("zb_admin_show_voicechat") and GetConVar("zb_admin_show_voicechat")
 			if adminShow and adminShow:GetBool() then return end
 		end
 
