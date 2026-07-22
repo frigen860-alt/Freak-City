@@ -1,25 +1,11 @@
     local PANEL = {}
-    local curent_panel 
+    local curent_panel
     local red_select = Color(180, 220, 255)
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     local FC_ESC_BG_SHADE = Color(0, 0, 0, 55)
     local FC_ESC_BG_PATH = "materials/freakcity/menu/bg.png"
     local FC_ESC_BG_MATERIAL_PATH = "freakcity/menu/bg.png"
-    
-    
-    
-    
-    
+
     local FC_ESC_LOGO_FILE = "materials/freakcity/menu/logo.png"
     local FC_ESC_LOGO_PATH = "freakcity/menu/logo.png"
     local FC_ESC_LOGO
@@ -27,9 +13,71 @@
     local FC_ESC_LOGO_HEIGHT = 280
     local FC_ESC_LOGO_Y = -20
 
-    
-    
     local FC_BUTTON_MATERIAL = Material("freakcity/menu/button.png", "smooth noclamp")
+
+    local FC_MENU_MUSIC_PATH = "sound/freakcity/menu/chainsaww.mp3"
+    local FC_MENU_MUSIC_VOLUME = CreateClientConVar(
+        "fc_menu_music_volume",
+        "0.15",
+        true,
+        false,
+        "Громкость музыки ESC-меню Freak-City (0-1)",
+        0,
+        1
+    )
+    local FC_MENU_MUSIC_ENABLED = CreateClientConVar(
+        "fc_menu_music_enabled",
+        "1",
+        true,
+        false,
+        "Включить музыку ESC-меню Freak-City"
+    )
+
+    local FC_MenuMusicChannel
+    local FC_MenuMusicOwner
+    local FC_MenuMusicRequest = 0
+
+    local function FC_StopMenuMusic(owner)
+        if owner and FC_MenuMusicOwner ~= owner then return end
+
+        FC_MenuMusicRequest = FC_MenuMusicRequest + 1
+        FC_MenuMusicOwner = nil
+
+        if IsValid(FC_MenuMusicChannel) then
+            FC_MenuMusicChannel:Stop()
+        end
+
+        FC_MenuMusicChannel = nil
+    end
+
+    local function FC_PlayMenuMusic(owner)
+        if not IsValid(owner) then return end
+        if not FC_MENU_MUSIC_ENABLED:GetBool() then return end
+
+        FC_StopMenuMusic()
+
+        FC_MenuMusicOwner = owner
+        FC_MenuMusicRequest = FC_MenuMusicRequest + 1
+        local requestID = FC_MenuMusicRequest
+
+        sound.PlayFile(FC_MENU_MUSIC_PATH, "noplay noblock", function(channel, errorID, errorName)
+            if requestID ~= FC_MenuMusicRequest or FC_MenuMusicOwner ~= owner or not IsValid(owner) then
+                if IsValid(channel) then
+                    channel:Stop()
+                end
+                return
+            end
+
+            if not IsValid(channel) then
+                return
+            end
+
+            FC_MenuMusicChannel = channel
+            channel:SetVolume(math.Clamp(FC_MENU_MUSIC_VOLUME:GetFloat(), 0, 1))
+            channel:EnableLooping(true)
+            channel:Play()
+        end)
+    end
 
     local function FC_GetLogoMaterial()
         if not file.Exists(FC_ESC_LOGO_FILE, "GAME") then
@@ -45,27 +93,11 @@
         return FC_ESC_LOGO, true
     end
 
-    concommand.Add("fc_logo_check", function()
-        local material, ok = FC_GetLogoMaterial()
-
-        print("[FreakCity Logo] Проверка:")
-        print("Файл найден:", file.Exists(FC_ESC_LOGO_FILE, "GAME"))
-        print("Путь файла:", FC_ESC_LOGO_FILE)
-        print("Материал:", FC_ESC_LOGO_PATH)
-        print("Материал исправен:", ok)
-        print("Material IsError:", material and material:IsError() or true)
-    end)
-    local FC_ESC_GRID_GRADIENT = Material("vgui/gradient-l")
+local FC_ESC_GRID_GRADIENT = Material("vgui/gradient-l")
     local FC_ESC_GRID_COLUMNS = 30
     local FC_ESC_GRID_ROWS = 17
     local FC_ESC_GRID_SPEED = 30
     local FC_ESC_GRID_COLOR = Color(55, 105, 190, 38)
-
-    
-    
-    
-    
-    
 
     local FC_ESC_BG_MAT
     local FC_ESC_BG_LAST_CHECK = 0
@@ -87,14 +119,7 @@
         return nil, false
     end
 
-    concommand.Add("fc_menu_bg_check", function()
-        print("[FreakCity ESC] bg check:")
-        print("file.Exists materials/freakcity/menu/bg.png =", file.Exists("materials/freakcity/menu/bg.png", "GAME"))
-        print("Material freakcity/menu/bg.png IsError =", Material("freakcity/menu/bg.png", "smooth noclamp"):IsError())
-    end)
-
-
-    local function ZCityEaseOutCubic(x)
+local function ZCityEaseOutCubic(x)
         x = math.Clamp(x or 0, 0, 1)
         return 1 - math.pow(1 - x, 3)
     end
@@ -116,7 +141,6 @@
             alignY or TEXT_ALIGN_CENTER
         )
     end
-
 
     local function ZCityUtf8Chars(str)
         local chars = {}
@@ -203,7 +227,6 @@
         drawFunc(panel)
     end
 
-
     local function ZCityShowGoodbyeAndDisconnect(luaMenu)
         if IsValid(luaMenu) then
             luaMenu:Close()
@@ -277,7 +300,6 @@
         end)
     end
 
-
     local function ZCityOpenAuthorsMenu(luaMenu)
         if IsValid(luaMenu) then
             luaMenu:Close()
@@ -319,7 +341,6 @@
         function panel:Think()
             self.AppearLerp = LerpFT(0.08, self.AppearLerp or 0, 1)
 
-            
             if input.IsKeyDown(KEY_ESCAPE) then
                 self:Remove()
             end
@@ -404,7 +425,7 @@
         gui.EnableScreenClicker(true)
     end
 
-    local Selects = {
+        local Selects = {
         {Title = "Играть", Func = function(luaMenu) luaMenu:Close() end},
         {Title = "Главное меню", Func = function(luaMenu) gui.ActivateGameUI() luaMenu:Close() end},
         {Title = "Телеграм", Func = function(luaMenu)
@@ -416,43 +437,140 @@
             gui.OpenURL("https://discord.gg/kWpK3RP8y6")
         end},
         {Title = "Авторы", Func = function(luaMenu) ZCityOpenAuthorsMenu(luaMenu) end},
-        {Title = "Снаряжение ролей",
+        {Title = "Роль трейтора",
         GamemodeOnly = true,
-        Func = function(luaMenu, parentPanel)
-            if not IsValid(parentPanel) then return end
+        NoMainClick = true,
+        CreatedFunc = function(self, parent, luaMenu)
+            local options = {}
+            local optionGap = ScreenScale(3)
+            local optionW = ScreenScale(28)
+            local optionH = ScreenScaleH(13)
+            local rightMargin = ScreenScale(5)
 
-            luaMenu.InRoleSubMenu = true
-            luaMenu.RoleSubMenu = parentPanel
+            self.RoleTitleShiftAmount = -ScreenScale(34)
+            self.RoleOptionsRevealLerp = 0
+            self.RoleOptionsHideAt = 0
 
-            
-            if IsValid(luaMenu.lDock) then
-                luaMenu.lDock:SetVisible(false)
-                luaMenu.lDock:SetMouseInputEnabled(false)
+            local function OpenOldRoleSelector(roleMode)
+                if not hg or not isfunction(hg.SelectPlayerRole) then
+                    notification.AddLegacy(
+                        "Старый выбор роли недоступен: hg.SelectPlayerRole не найден.",
+                        NOTIFY_ERROR,
+                        5
+                    )
+                    return
+                end
+
+                FreakCitySelectedTraitorMode = roleMode
+
+                if IsValid(luaMenu) then
+                    luaMenu:Close()
+                end
+
+                timer.Simple(0.15, function()
+                    if hg and isfunction(hg.SelectPlayerRole) then
+                        hg.SelectPlayerRole(nil, roleMode)
+                    end
+                end)
             end
 
-            if IsValid(luaMenu.previewHolder) then
-                luaMenu.previewHolder:SetVisible(false)
+            local function CreateRoleOption(textValue, roleMode, index)
+                local option = vgui.Create("DButton", self)
+                option:SetText("")
+                option:SetCursor("hand")
+                option:SetZPos(20)
+                option.HoverLerp = 0
+                option.RoleMode = roleMode
+                option.TextValue = textValue
+                option:SetVisible(true)
+                option:SetAlpha(0)
+                option:SetMouseInputEnabled(false)
+
+                function option:Think()
+                    local parentButton = self:GetParent()
+                    if not IsValid(parentButton) then
+                        self:Remove()
+                        return
+                    end
+
+                    local reveal = math.Clamp(parentButton.RoleOptionsRevealLerp or 0, 0, 1)
+                    local visible = reveal > 0.015
+
+                    self:SetVisible(true)
+                    self:SetMouseInputEnabled(reveal > 0.2)
+                    self:SetAlpha(math.floor(255 * reveal))
+
+                    if not visible then
+                        self:SetCursor("arrow")
+                        return
+                    end
+
+                    self:SetCursor("hand")
+
+                    self.HoverLerp = LerpFT(
+                        0.18,
+                        self.HoverLerp or 0,
+                        self:IsHovered() and 1 or 0
+                    )
+
+                    local totalW = optionW * 2 + optionGap
+                    local startX = parentButton:GetWide() - totalW - rightMargin
+                    local slide = (1 - reveal) * ScreenScale(8)
+
+                    self:SetSize(optionW, optionH)
+                    self:SetPos(
+                        startX + (index - 1) * (optionW + optionGap) + slide,
+                        (parentButton:GetTall() - optionH) * 0.5
+                    )
+                end
+
+                function option:Paint(w, h)
+                    local hover = self.HoverLerp or 0
+                    local selected = FreakCitySelectedTraitorMode == self.RoleMode
+
+                    local bg = selected
+                        and Color(115, 30, 22, 235)
+                        or Color(
+                            Lerp(hover, 30, 92),
+                            Lerp(hover, 24, 28),
+                            Lerp(hover, 20, 22),
+                            225
+                        )
+
+                    draw.RoundedBox(3, 0, 0, w, h, bg)
+
+                    surface.SetDrawColor(
+                        selected and Color(205, 76, 55, 235)
+                            or Color(105, 77, 56, 190)
+                    )
+                    surface.DrawOutlinedRect(0, 0, w, h, 1)
+
+                    draw.SimpleText(
+                        self.TextValue,
+                        "ZCity_Tiny",
+                        w * 0.5,
+                        h * 0.5,
+                        Color(240, 232, 215),
+                        TEXT_ALIGN_CENTER,
+                        TEXT_ALIGN_CENTER
+                    )
+                end
+
+                function option:DoClick()
+                    OpenOldRoleSelector(self.RoleMode)
+                end
+
+                options[#options + 1] = option
+                return option
             end
 
-            if IsValid(luaMenu.bottomDock) then
-                luaMenu.bottomDock:SetVisible(false)
-            end
+            CreateRoleOption("SOE", "soe", 1)
+            CreateRoleOption("STD", "standard", 2)
 
-            parentPanel:SetZPos(500)
-            parentPanel:SetMouseInputEnabled(true)
-            parentPanel:SetKeyboardInputEnabled(false)
+            self.RoleOptionButtons = options
+        end,
+        Func = function(luaMenu)
 
-            if not hg or not hg.RoleLoadout or not isfunction(hg.RoleLoadout.CreateEmbedded) then
-                local warning = vgui.Create("DLabel", parentPanel)
-                warning:Dock(FILL)
-                warning:SetFont("ZCity_Small")
-                warning:SetTextColor(Color(255, 165, 80))
-                warning:SetContentAlignment(5)
-                warning:SetText("Удалено на переработку.")
-                return
-            end
-
-            hg.RoleLoadout.CreateEmbedded(parentPanel, "traitor")
         end,
         },
         {Title = "Правила", Func = function(luaMenu)
@@ -517,10 +635,6 @@
         antialias = true
     })
 
-
-
-
-
 surface.CreateFont("FC_Newspaper", {
     font = "Special Elite (Rus by Lomzz)",
     size = ScreenScale(14),
@@ -545,9 +659,6 @@ surface.CreateFont("FC_Newspaper_Small", {
     extended = true
 })
 
-
-    
-    
     local FC_MenuHoverFontsReady = false
     local function FC_GetMenuHoverFont(v)
         if not FC_MenuHoverFontsReady then
@@ -633,26 +744,12 @@ surface.CreateFont("FC_Newspaper_Small", {
         curent_panel = nil
     end
 
-
-    
-    
-    
-    
-
-
-    
-    
-    
-    
-    
-
     local FC_ESC_CHAR = {
-        
-        
-        x = 0.650,      
-        y = 0.045,      
-        w = 0.330,      
-        h = 0.92,       
+
+        x = 0.650,
+        y = 0.045,
+        w = 0.330,
+        h = 0.92,
 
         fov = 29,
         camPos = Vector(86, -5, 56),
@@ -754,7 +851,6 @@ surface.CreateFont("FC_Newspaper_Small", {
         local mats = ent:GetMaterials() or {}
         local sexID = modelData.sex and 2 or 1
 
-        
         for k, v in SortedPairs(modelData.submatSlots or {}) do
             local slot = nil
 
@@ -773,7 +869,6 @@ surface.CreateFont("FC_Newspaper_Small", {
             end
         end
 
-        
         for i = 1, #mats do
             if hg.Appearance.FacemapsSlots
                 and hg.Appearance.FacemapsSlots[mats[i]]
@@ -782,7 +877,6 @@ surface.CreateFont("FC_Newspaper_Small", {
             end
         end
 
-        
         for k, bg in SortedPairs(ent:GetBodyGroups() or {}) do
             local selected = appearance.ABodygroups[bg.name]
             if not selected then continue end
@@ -864,7 +958,6 @@ surface.CreateFont("FC_Newspaper_Small", {
         viewer:SetLookAt(FC_ESC_CHAR.lookAt)
         viewer:SetLookAng(Angle(7, 180, 0))
 
-        
         viewer:SetAmbientLight(Color(55, 58, 65))
         viewer:SetDirectionalLight(BOX_FRONT, Color(165, 170, 180))
         viewer:SetDirectionalLight(BOX_RIGHT, Color(120, 150, 210))
@@ -875,7 +968,7 @@ surface.CreateFont("FC_Newspaper_Small", {
 
         local oldPaint = viewer.Paint
         function viewer:Paint(w, h)
-            
+
             DisableClipping(true)
             oldPaint(self, w, h)
             DisableClipping(false)
@@ -924,14 +1017,11 @@ surface.CreateFont("FC_Newspaper_Small", {
         end)
     end
 
-
     function PANEL:Init()
         self:SetAlpha(0)
         self:SetSize(ScrW(), ScrH())
 
-        
-        
-        
+        FC_PlayMenuMusic(self)
 
         self.OpenedAt = RealTime()
         self.MenuOpenLerp = 0
@@ -957,9 +1047,6 @@ surface.CreateFont("FC_Newspaper_Small", {
         local lDock = self.lDock
         lDock:SetZPos(10)
 
-        
-        
-        
         self.MenuLeftX = math.max(ScreenScaleH(28), ScrW() * 0.035)
         self.MenuTopY = ScrH() * 0.17
         self.MenuWidth = math.max(ScreenScaleH(330), ScrW() * 0.27)
@@ -1015,6 +1102,7 @@ surface.CreateFont("FC_Newspaper_Small", {
         end
 
         self.Buttons = {}
+        self.FC_MenuExtraOffset = 0
         for k, v in ipairs(Selects) do
             if v.GamemodeOnly and engine.ActiveGamemode() != "zcity" then continue end
             self:AddSelect(lDock, v.Title, v)
@@ -1023,7 +1111,7 @@ surface.CreateFont("FC_Newspaper_Small", {
         local totalButtons = #self.Buttons
         for index, btn in ipairs(self.Buttons) do
             if IsValid(btn) then
-                
+
                 btn.AppearDelay = (totalButtons - index) * 0.10
                 btn.AppearOffset = ScreenScaleH(32)
             end
@@ -1070,7 +1158,7 @@ surface.CreateFont("FC_Newspaper_Small", {
                 end
             end
         end
-        
+
         self.panelparrent = vgui.Create("DPanel", self)
         self.panelparrent:SetPos(0, 0)
         self.panelparrent:SetSize(ScrW(), ScrH())
@@ -1099,12 +1187,13 @@ surface.CreateFont("FC_Newspaper_Small", {
         self:CreateAppearancePreview()
     end
 
-
-    
-    
-    
-    
     function PANEL:Paint(w, h)
+
+        if self.InRoleSubMenu then
+
+            return
+        end
+
         local bgMat, exists = FC_GetEscBackgroundMaterial()
 
         if exists and bgMat then
@@ -1115,11 +1204,9 @@ surface.CreateFont("FC_Newspaper_Small", {
             draw.RoundedBox(0, 0, 0, w, h, Color(12, 22, 45, 255))
         end
 
-        
         surface.SetDrawColor(0, 0, 0, 80)
         surface.DrawRect(0, 0, w, h)
     end
-
 
     function PANEL:First( ply )
         self.OpenedAt = RealTime()
@@ -1135,7 +1222,6 @@ surface.CreateFont("FC_Newspaper_Small", {
 
     end
 
-    
     local sw, sh = ScrW(), ScrH()
     local gridX = 20
     local gridY = 30
@@ -1143,8 +1229,6 @@ surface.CreateFont("FC_Newspaper_Small", {
     function PANEL:AddSelect( pParent, strTitle, tbl )
         local id = #self.Buttons + 1
 
-        
-        
         self.Buttons[id] = vgui.Create("DButton", pParent)
         local btn = self.Buttons[id]
         local buttonTall = ScreenScale(15)
@@ -1154,7 +1238,10 @@ surface.CreateFont("FC_Newspaper_Small", {
         btn:SetText("")
         btn:SetCursor("hand")
         btn:SetFont("FC_Newspaper")
-        btn.BaseY = ScreenScaleH(104) + (id - 1) * (buttonTall + buttonGap)
+        local previousExtraOffset = self.FC_MenuExtraOffset or 0
+        btn.BaseY = ScreenScaleH(104) + (id - 1) * (buttonTall + buttonGap) + previousExtraOffset
+        btn.MenuExtraHeight = tbl.ExtraHeight or 0
+        self.FC_MenuExtraOffset = previousExtraOffset + btn.MenuExtraHeight
         btn.AppearOffset = ScreenScaleH(32)
         btn.AppearDelay = 0
         btn.AppearLerp = 0
@@ -1167,7 +1254,6 @@ surface.CreateFont("FC_Newspaper_Small", {
         btn.Func = tbl.Func
         btn.HoveredFunc = tbl.HoveredFunc
 
-        
         surface.SetFont(FC_GetMenuHoverFont(1))
         local maxText = ZCityUpper(strTitle or "")
         local maxW, maxH = surface.GetTextSize(maxText)
@@ -1180,6 +1266,8 @@ btn.HitH = ScreenScaleH(35)
         if tbl.CreatedFunc then tbl.CreatedFunc(btn, self, luaMenu) end
 
         function btn:DoClick()
+            if tbl.NoMainClick then return end
+
             if curent_panel == string.lower(strTitle) then
                 for i = 1, 3 do
                     surface.PlaySound("shitty/tap_release.wav")
@@ -1226,17 +1314,43 @@ btn.HitH = ScreenScaleH(35)
             self.TextDrawLerp = appearEase
             self:SetAlpha(255 * appearEase)
 
-            
             self:SetSize(self.HitW, self.HitH)
             self:SetPos((pParent:GetWide() - self.HitW) * 0.5, self.BaseY + (1 - appearEase) * self.AppearOffset)
 
-            local isHovered = self:IsHovered()
+            local roleOptionHovered = false
+            for _, roleOption in ipairs(self.RoleOptionButtons or {}) do
+                if IsValid(roleOption)
+                    and (roleOption:GetAlpha() or 0) > 10
+                    and roleOption:IsHovered() then
+                    roleOptionHovered = true
+                    break
+                end
+            end
+
+            local directHover = self:IsHovered()
+
+            if directHover or roleOptionHovered then
+
+                self.RoleOptionsHideAt = RealTime() + 0.35
+            end
+
+            local roleOptionsOpen = directHover
+                or roleOptionHovered
+                or RealTime() < (self.RoleOptionsHideAt or 0)
+
+            self.RoleOptionsRevealLerp = LerpFT(
+                0.22,
+                self.RoleOptionsRevealLerp or 0,
+                roleOptionsOpen and 1 or 0
+            )
+
+            local isHovered = roleOptionsOpen
             local isDown = self:IsDown()
             self.HoverLerp = LerpFT(0.18, self.HoverLerp or 0, isHovered and 1 or 0)
             self.PressLerp = LerpFT(0.22, self.PressLerp or 0, isDown and 1 or 0)
 
             local v = self.HoverLerp or 0
-            local isCurrent = curent_panel == string.lower(strTitle) and strTitle ~= "Снаряжение ролей"
+            local isCurrent = curent_panel == string.lower(strTitle) and strTitle ~= "Роль трейтора"
             local baseText = isCurrent and ("[ " .. strTitle .. " ]") or strTitle
 
             self.DisplayText = ZCityAnimatedUpper(baseText, isCurrent and 1 or v)
@@ -1253,7 +1367,8 @@ btn.HitH = ScreenScaleH(35)
             local p = self.PressLerp or 0
             local text = self.DisplayText or strTitle
             local font = "FC_Newspaper"
-            local x = w * 0.5
+            local roleReveal = math.Clamp(self.RoleOptionsRevealLerp or 0, 0, 1)
+            local x = w * 0.5 + (self.RoleTitleShiftAmount or 0) * roleReveal
             local y = h * 0.5 + Lerp(p, 0, ScreenScaleH(1))
             local col = self.DisplayColor or Color(100, 150, 255)
             local alpha = 255 * (self.TextDrawLerp or self.AppearLerp or 0)
@@ -1285,6 +1400,8 @@ btn.HitH = ScreenScaleH(35)
     end
 
     function PANEL:Close()
+        FC_StopMenuMusic(self)
+
         if IsValid(self.previewHolder) then
             self.previewHolder:Remove()
             self.previewHolder = nil
@@ -1310,6 +1427,11 @@ btn.HitH = ScreenScaleH(35)
         end
         self:Close()
         MainMenu = nil
+    end
+
+    function PANEL:OnRemove()
+
+        FC_StopMenuMusic(self)
     end
 
     vgui.Register( "ZMainMenu", PANEL, "ZFrame")
