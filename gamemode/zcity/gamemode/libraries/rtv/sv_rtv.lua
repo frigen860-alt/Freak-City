@@ -1,6 +1,8 @@
 --;; ===================================
 --;; RTV Modded RTVded :troll:
 --;; ===================================
+resource.AddFile("sound/rtv/map_vote_theme.mp3")
+
 util.AddNetworkString("ZB_RockTheVote_start")
 util.AddNetworkString("ZB_RockTheVote_vote")
 util.AddNetworkString("ZB_RockTheVote_voteCLreg")
