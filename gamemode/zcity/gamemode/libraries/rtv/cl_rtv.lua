@@ -8,6 +8,42 @@ local rtvEnded = false
 
 local VoteCD = 0
 
+-- Music for the map vote menu
+local RTV_MUSIC_PATH = "sound/freakcity/rtv/map_vote_theme.mp3"
+local RTV_MUSIC_VOLUME = 0.25
+local RTVMusicChannel
+local ActiveRTVMenu
+
+local function StopRTVMusic()
+    if IsValid(RTVMusicChannel) then
+        RTVMusicChannel:Stop()
+    end
+
+    RTVMusicChannel = nil
+end
+
+local function StartRTVMusic()
+    StopRTVMusic()
+
+    sound.PlayFile(RTV_MUSIC_PATH, "noplay noblock", function(channel, errorID, errorName)
+        if not IsValid(channel) then
+            print("[RTV Music] Failed to play music:", errorID, errorName)
+            return
+        end
+
+        -- The menu may have been closed while the file was loading.
+        if not IsValid(ActiveRTVMenu) then
+            channel:Stop()
+            return
+        end
+
+        RTVMusicChannel = channel
+        channel:SetVolume(RTV_MUSIC_VOLUME)
+        channel:EnableLooping(true)
+        channel:Play()
+    end)
+end
+
 -- RTV CL Functions
 local BlurBackground = hg.BlurBackground
 
@@ -23,6 +59,21 @@ function zb.RTVMenu()
     RTVMenu:SetDraggable(false)
     RTVMenu:MakePopup()
     RTVMenu:SetKeyboardInputEnabled(false)
+
+    if IsValid(ActiveRTVMenu) and ActiveRTVMenu ~= RTVMenu then
+        ActiveRTVMenu:Remove()
+    end
+
+    ActiveRTVMenu = RTVMenu
+
+    function RTVMenu:OnRemove()
+        if ActiveRTVMenu == self then
+            ActiveRTVMenu = nil
+            StopRTVMusic()
+        end
+    end
+
+    StartRTVMusic()
 
     local MAPSPanel = vgui.Create("DPanel", RTVMenu)
     MAPSPanel:Dock(FILL)
